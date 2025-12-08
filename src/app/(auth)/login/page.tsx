@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -12,11 +12,42 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{
     type: "error" | "success";
     text: string;
   } | null>(null);
+
+  // Verificar si el usuario ya está autenticado al cargar la página
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data.user?.id) {
+          // Usuario autenticado, redirigir al dashboard
+          const { data: stuData } = await supabase
+            .from("students")
+            .select("id")
+            .eq("id", data.user.id)
+            .maybeSingle();
+
+          if (stuData) {
+            router.push("/dashboard/student");
+          } else {
+            router.push("/dashboard/recruiter");
+          }
+          return;
+        }
+      } catch (err) {
+        console.error("checkAuth error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +61,7 @@ export default function LoginPage() {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     try {
       // 1) Login contra Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -130,9 +161,19 @@ export default function LoginPage() {
         text: "Error inesperado al iniciar sesión.",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-sky-900 flex items-center justify-center px-4">
+        <div className="text-white text-center">
+          <p>Cargando...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-sky-900 flex items-center justify-center px-4">
@@ -221,14 +262,22 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <div className="mt-1 text-right">
+              <a
+                href="/auth/forgot-password"
+                className="text-xs text-sky-600 hover:text-sky-700 font-medium"
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="mt-2 w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/30 hover:bg-sky-700 disabled:opacity-60"
           >
-            {loading ? "Iniciando sesión…" : "Iniciar Sesión"}
+            {submitting ? "Iniciando sesión…" : "Iniciar Sesión"}
           </button>
         </form>
 

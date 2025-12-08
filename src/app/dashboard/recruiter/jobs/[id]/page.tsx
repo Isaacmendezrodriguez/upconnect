@@ -14,6 +14,20 @@ type Job = {
   salary?: number | null;
   available_slots?: number | null;
   status?: string | null;
+
+  // Nuevos campos
+  area?: string | null;
+  nivel_puesto?: string | null;
+  tipo_programa?: string | null;
+  nivel_educativo_requerido?: string | null;
+  semestre_minimo?: number | null;
+  modalidad_trabajo?: string | null;
+  horario_trabajo?: string | null;
+  salario_minimo?: number | null;
+  salario_maximo?: number | null;
+  moneda?: string | null;
+  beneficios?: string | null;
+  tags?: string[] | null;
 };
 
 type Application = {
@@ -36,7 +50,7 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-  // Campos editables
+  // Campos base
   const [title, setTitle] = useState("");
   const [position, setPosition] = useState("");
   const [description, setDescription] = useState("");
@@ -45,13 +59,36 @@ export default function JobDetailPage() {
   const [status, setStatus] = useState("ABIERTA");
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // Cupos (solo para modo edición)
+  // Nuevos campos
+  const [area, setArea] = useState<string | "">("");
+  const [nivelPuesto, setNivelPuesto] = useState<string | "">("");
+  const [tipoPrograma, setTipoPrograma] = useState<string | "">("");
+  const [nivelEducativo, setNivelEducativo] = useState<string | "">("");
+  const [semestreMinimo, setSemestreMinimo] = useState<number | "">("");
+  const [modalidadTrabajo, setModalidadTrabajo] = useState<string | "">("");
+  const [horarioTrabajo, setHorarioTrabajo] = useState<string | "">("");
+  const [salarioMinimo, setSalarioMinimo] = useState<number | "">("");
+  const [salarioMaximo, setSalarioMaximo] = useState<number | "">("");
+  const [moneda, setMoneda] = useState<string>("MXN");
+  const [beneficios, setBeneficios] = useState<string>("");
+  const [tagsInput, setTagsInput] = useState<string>("");
+
+  // Cupos
   const [newSlots, setNewSlots] = useState<number | "">("");
 
-  /* =============== CARGA DE VACANTE EXISTENTE =============== */
+  /* =============== HELPERS =============== */
+
+  const parseTagsToArray = (text: string): string[] =>
+    text
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => t.toLowerCase());
+
+  /* =============== CARGA DE VACANTE =============== */
 
   const fetchJob = async () => {
-    if (isNew) return; // en modo creación no buscamos en BD
+    if (isNew) return;
 
     if (!jobId || Number.isNaN(jobId)) {
       setMessage({ type: "error", text: "Id de vacante inválido." });
@@ -76,26 +113,35 @@ export default function JobDetailPage() {
 
       if (!data) {
         setJob(null);
-        setMessage({
-          type: "error",
-          text: "No se encontró la vacante.",
-        });
+        setMessage({ type: "error", text: "No se encontró la vacante." });
         return;
       }
 
       const j = data as Job;
       setJob(j);
 
-      // Inicializar campos de edición
+      // Campos base
       setTitle(j.title || "");
       setPosition(j.position || "");
       setDescription(j.description || "");
       setDegreeRequired(j.degree_required || "");
       setSalary(typeof j.salary === "number" ? j.salary : "");
       setStatus(j.status || "ABIERTA");
-      setNewSlots(
-        typeof j.available_slots === "number" ? j.available_slots : ""
-      );
+      setNewSlots(typeof j.available_slots === "number" ? j.available_slots : "");
+
+      // Nuevos campos
+      setArea(j.area ?? "");
+      setNivelPuesto(j.nivel_puesto ?? "");
+      setTipoPrograma(j.tipo_programa ?? "");
+      setNivelEducativo(j.nivel_educativo_requerido ?? "");
+      setSemestreMinimo(typeof j.semestre_minimo === "number" ? j.semestre_minimo : "");
+      setModalidadTrabajo(j.modalidad_trabajo ?? "");
+      setHorarioTrabajo(j.horario_trabajo ?? "");
+      setSalarioMinimo(typeof j.salario_minimo === "number" ? j.salario_minimo : "");
+      setSalarioMaximo(typeof j.salario_maximo === "number" ? j.salario_maximo : "");
+      setMoneda(j.moneda ?? "MXN");
+      setBeneficios(j.beneficios ?? "");
+      setTagsInput(Array.isArray(j.tags) ? j.tags.join(", ") : "");
     } catch (err) {
       console.error("fetchJob error:", err);
       setMessage({ type: "error", text: "No fue posible cargar la vacante." });
@@ -133,7 +179,7 @@ export default function JobDetailPage() {
         await fetchJob();
         await fetchApplications();
       } else {
-        // modo creación: aseguramos valores por defecto
+        // defaults creación
         setTitle("");
         setPosition("");
         setDescription("");
@@ -141,6 +187,19 @@ export default function JobDetailPage() {
         setSalary("");
         setStatus("ABIERTA");
         setNewSlots("");
+
+        setArea("");
+        setNivelPuesto("");
+        setTipoPrograma("");
+        setNivelEducativo("");
+        setSemestreMinimo("");
+        setModalidadTrabajo("");
+        setHorarioTrabajo("");
+        setSalarioMinimo("");
+        setSalarioMaximo("");
+        setMoneda("MXN");
+        setBeneficios("");
+        setTagsInput("");
       }
 
       setLoading(false);
@@ -150,18 +209,38 @@ export default function JobDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobIdParam]);
 
-  /* =============== GUARDAR INFORMACIÓN (CREATE / UPDATE) =============== */
+  /* =============== GUARDAR VACANTE (CREATE / UPDATE) =============== */
 
   const handleSaveJobInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
     setSavingInfo(true);
 
-    // Validar salario
     if (salary !== "" && Number.isNaN(Number(salary))) {
+      setMessage({ type: "error", text: "El salario debe ser un número válido." });
+      setSavingInfo(false);
+      return;
+    }
+    if (semestreMinimo !== "" && Number.isNaN(Number(semestreMinimo))) {
       setMessage({
         type: "error",
-        text: "El salario debe ser un número válido.",
+        text: "El semestre mínimo debe ser un número válido.",
+      });
+      setSavingInfo(false);
+      return;
+    }
+    if (salarioMinimo !== "" && Number.isNaN(Number(salarioMinimo))) {
+      setMessage({
+        type: "error",
+        text: "El salario mínimo debe ser un número válido.",
+      });
+      setSavingInfo(false);
+      return;
+    }
+    if (salarioMaximo !== "" && Number.isNaN(Number(salarioMaximo))) {
+      setMessage({
+        type: "error",
+        text: "El salario máximo debe ser un número válido.",
       });
       setSavingInfo(false);
       return;
@@ -170,9 +249,20 @@ export default function JobDetailPage() {
     const numericSalary =
       typeof salary === "number" ? salary : salary === "" ? null : Number(salary);
 
+    const numericSemestre =
+      semestreMinimo === "" ? null : Number(semestreMinimo);
+
+    const numericSalMin =
+      salarioMinimo === "" ? null : Number(salarioMinimo);
+
+    const numericSalMax =
+      salarioMaximo === "" ? null : Number(salarioMaximo);
+
+    const tagsArray = parseTagsToArray(tagsInput);
+
     try {
       if (isNew) {
-        // ===== CREAR NUEVA VACANTE =====
+        // CREAR
         const { data: authData, error: authError } = await supabase.auth.getUser();
         if (authError || !authData?.user?.id) {
           console.error("auth getUser error:", authError);
@@ -186,7 +276,6 @@ export default function JobDetailPage() {
 
         const recruiterId = authData.user.id;
 
-        // available_slots al crear (opcionalmente usar newSlots si lo quisieras)
         const slotsValue =
           typeof newSlots === "number"
             ? newSlots
@@ -205,32 +294,37 @@ export default function JobDetailPage() {
             salary: numericSalary,
             status: status || "ABIERTA",
             available_slots: slotsValue,
+
+            area: area === "" ? null : area,
+            nivel_puesto: nivelPuesto === "" ? null : nivelPuesto,
+            tipo_programa: tipoPrograma === "" ? null : tipoPrograma,
+            nivel_educativo_requerido: nivelEducativo === "" ? null : nivelEducativo,
+            semestre_minimo: numericSemestre,
+            modalidad_trabajo: modalidadTrabajo === "" ? null : modalidadTrabajo,
+            horario_trabajo: horarioTrabajo === "" ? null : horarioTrabajo,
+            salario_minimo: numericSalMin,
+            salario_maximo: numericSalMax,
+            moneda: moneda?.trim() || "MXN",
+            beneficios: beneficios.trim() || null,
+            tags: tagsArray,
           })
           .select("id")
           .single();
 
         if (insertErr) {
           console.error("insert job error:", insertErr);
-          setMessage({
-            type: "error",
-            text: "No se pudo crear la vacante.",
-          });
+          setMessage({ type: "error", text: "No se pudo crear la vacante." });
           setSavingInfo(false);
           return;
         }
 
         const newJobId = inserted?.id as number;
-        setMessage({
-          type: "success",
-          text: "Vacante creada correctamente.",
-        });
-
-        // Redirigir al detalle de la nueva vacante (modo edición)
+        setMessage({ type: "success", text: "Vacante creada correctamente." });
         router.push(`/dashboard/recruiter/jobs/${newJobId}`);
         return;
       }
 
-      // ===== ACTUALIZAR VACANTE EXISTENTE =====
+      // ACTUALIZAR
       if (!job || !jobId || Number.isNaN(jobId)) {
         setMessage({
           type: "error",
@@ -249,6 +343,19 @@ export default function JobDetailPage() {
           degree_required: degreeRequired.trim() || null,
           salary: numericSalary,
           status: status || null,
+
+          area: area === "" ? null : area,
+          nivel_puesto: nivelPuesto === "" ? null : nivelPuesto,
+          tipo_programa: tipoPrograma === "" ? null : tipoPrograma,
+          nivel_educativo_requerido: nivelEducativo === "" ? null : nivelEducativo,
+          semestre_minimo: numericSemestre,
+          modalidad_trabajo: modalidadTrabajo === "" ? null : modalidadTrabajo,
+          horario_trabajo: horarioTrabajo === "" ? null : horarioTrabajo,
+          salario_minimo: numericSalMin,
+          salario_maximo: numericSalMax,
+          moneda: moneda?.trim() || "MXN",
+          beneficios: beneficios.trim() || null,
+          tags: tagsArray,
         })
         .eq("id", jobId);
 
@@ -262,7 +369,6 @@ export default function JobDetailPage() {
         return;
       }
 
-      // Actualizar estado local
       setJob((prev) =>
         prev
           ? {
@@ -273,6 +379,18 @@ export default function JobDetailPage() {
               degree_required: degreeRequired.trim() || null,
               salary: numericSalary,
               status: status || null,
+              area: area === "" ? null : area,
+              nivel_puesto: nivelPuesto === "" ? null : nivelPuesto,
+              tipo_programa: tipoPrograma === "" ? null : tipoPrograma,
+              nivel_educativo_requerido: nivelEducativo === "" ? null : nivelEducativo,
+              semestre_minimo: numericSemestre,
+              modalidad_trabajo: modalidadTrabajo === "" ? null : modalidadTrabajo,
+              horario_trabajo: horarioTrabajo === "" ? null : horarioTrabajo,
+              salario_minimo: numericSalMin,
+              salario_maximo: numericSalMax,
+              moneda: moneda?.trim() || "MXN",
+              beneficios: beneficios.trim() || null,
+              tags: tagsArray,
             }
           : prev
       );
@@ -293,7 +411,7 @@ export default function JobDetailPage() {
     }
   };
 
-  /* =============== CUPOS (solo edición) =============== */
+  /* =============== CUPOS =============== */
 
   const handleUpdateSlots = async () => {
     setMessage(null);
@@ -330,7 +448,7 @@ export default function JobDetailPage() {
     }
   };
 
-  /* =============== POSTULANTES (solo edición) =============== */
+  /* =============== POSTULANTES =============== */
 
   const handleSetApplicationStatus = async (
     applicationId: number,
@@ -397,7 +515,6 @@ export default function JobDetailPage() {
           </button>
         </div>
 
-        {/* Mensajes */}
         {message && (
           <div
             className={`mb-4 rounded-md px-3 py-2 text-sm ${
@@ -410,7 +527,6 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Si es edición y realmente no encontramos la vacante */}
         {!isNew && !job ? (
           <div className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-8 text-center">
             <p className="text-sm text-slate-700 mb-2">
@@ -428,7 +544,7 @@ export default function JobDetailPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Información editable */}
+            {/* Formulario vacante */}
             <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">
                 {isNew ? "Información de la nueva vacante" : "Información de la vacante"}
@@ -482,9 +598,7 @@ export default function JobDetailPage() {
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
                     value={salary === "" ? "" : salary}
                     onChange={(e) =>
-                      setSalary(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
+                      setSalary(e.target.value === "" ? "" : Number(e.target.value))
                     }
                   />
                 </div>
@@ -501,6 +615,185 @@ export default function JobDetailPage() {
                     <option value="ABIERTA">ABIERTA</option>
                     <option value="CERRADA">CERRADA</option>
                   </select>
+                </div>
+
+                {/* Nuevos campos */}
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Área</label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="frontend">frontend</option>
+                    <option value="backend">backend</option>
+                    <option value="fullstack">fullstack</option>
+                    <option value="qa">qa</option>
+                    <option value="datos">datos</option>
+                    <option value="soporte">soporte</option>
+                    <option value="devops">devops</option>
+                    <option value="ui-ux">ui-ux</option>
+                    <option value="otro">otro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Nivel del puesto</label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={nivelPuesto}
+                    onChange={(e) => setNivelPuesto(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="trainee">trainee</option>
+                    <option value="junior">junior</option>
+                    <option value="semisenior">semisenior</option>
+                    <option value="sin-experiencia">sin-experiencia</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Tipo de programa</label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={tipoPrograma}
+                    onChange={(e) => setTipoPrograma(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="practicas-profesionales">practicas-profesionales</option>
+                    <option value="servicio-social">servicio-social</option>
+                    <option value="residencias">residencias</option>
+                    <option value="proyecto-temporal">proyecto-temporal</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Nivel educativo requerido
+                  </label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={nivelEducativo}
+                    onChange={(e) => setNivelEducativo(e.target.value)}
+                  >
+                    <option value="">Cualquiera</option>
+                    <option value="SECUNDARIA">SECUNDARIA</option>
+                    <option value="BACHILLERATO">BACHILLERATO</option>
+                    <option value="UNIVERSIDAD">UNIVERSIDAD</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Semestre mínimo (opcional)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={semestreMinimo === "" ? "" : semestreMinimo}
+                    onChange={(e) =>
+                      setSemestreMinimo(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Modalidad</label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={modalidadTrabajo}
+                    onChange={(e) => setModalidadTrabajo(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="remoto">remoto</option>
+                    <option value="hibrido">hibrido</option>
+                    <option value="presencial">presencial</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Horario</label>
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={horarioTrabajo}
+                    onChange={(e) => setHorarioTrabajo(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="medio-tiempo">medio-tiempo</option>
+                    <option value="tiempo-completo">tiempo-completo</option>
+                    <option value="horario-flexible">horario-flexible</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Salario mínimo (opcional)
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={salarioMinimo === "" ? "" : salarioMinimo}
+                    onChange={(e) =>
+                      setSalarioMinimo(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Salario máximo (opcional)
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={salarioMaximo === "" ? "" : salarioMaximo}
+                    onChange={(e) =>
+                      setSalarioMaximo(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-700 mb-1">Moneda</label>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={moneda}
+                    onChange={(e) => setMoneda(e.target.value)}
+                    placeholder="MXN"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Beneficios y prestaciones
+                  </label>
+                  <textarea
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 min-h-[80px]"
+                    value={beneficios}
+                    onChange={(e) => setBeneficios(e.target.value)}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-slate-700 mb-1">
+                    Tags (separados por comas)
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    placeholder='Ej. "frontend, trainee, practicas-profesionales, remoto"'
+                  />
                 </div>
 
                 <div className="md:col-span-2">
@@ -532,10 +825,9 @@ export default function JobDetailPage() {
               </form>
             </section>
 
-            {/* Cupos y postulantes solo en modo edición */}
+            {/* Cupos + Postulantes solo edición */}
             {!isNew && job && (
               <>
-                {/* Cupos */}
                 <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5">
                   <h3 className="text-sm font-semibold text-slate-900 mb-3">
                     Disponibilidad de cupos
@@ -567,7 +859,6 @@ export default function JobDetailPage() {
                   </div>
                 </section>
 
-                {/* Postulantes */}
                 <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5 mb-6">
                   <h3 className="text-sm font-semibold text-slate-900 mb-3">
                     Postulantes

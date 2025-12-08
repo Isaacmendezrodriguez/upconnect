@@ -115,6 +115,31 @@ export default function RecruiterDashboardPage() {
     router.push(`/dashboard/recruiter/jobs/${jobId}`);
   };
 
+  const handleDeleteJob = async (jobId: number) => {
+    const ok = confirm("¿Estás seguro de que deseas eliminar esta vacante? Esta acción no se puede deshacer.");
+    if (!ok) return;
+
+    setLoading(true);
+    setMessage(null);
+    try {
+      const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+      if (error) {
+        console.error("delete job error:", error);
+        setMessage({ type: "error", text: "No fue posible eliminar la vacante. Intenta de nuevo." });
+      } else {
+        // Actualizar estado local
+        setJobs((prev) => prev.filter((j) => j.id !== jobId));
+        setMessage({ type: "success", text: "Vacante eliminada correctamente." });
+      }
+    } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
+      console.error("handleDeleteJob error:", text);
+      setMessage({ type: "error", text: "Error inesperado al eliminar la vacante." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ======================
      ESTADOS DE CARGA
   ====================== */
@@ -289,6 +314,9 @@ export default function RecruiterDashboardPage() {
                       <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                         Cupos
                       </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -329,6 +357,24 @@ export default function RecruiterDashboardPage() {
                         </td>
                         <td className="px-3 py-2 text-slate-700">
                           {job.available_slots ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditJob(job.id)}
+                              className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteJob(job.id)}
+                              className="inline-flex items-center justify-center rounded-md bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

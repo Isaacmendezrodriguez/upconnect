@@ -197,6 +197,20 @@ export default function StudentDashboardPage() {
               >
                 Mi perfil
               </button>
+              <button
+                className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-red-600 hover:bg-red-50"
+                onClick={async () => {
+                  try {
+                    await supabase.auth.signOut();
+                    router.push("/login");
+                  } catch (err) {
+                    console.error("sign out error:", err);
+                    setMessage({ type: "error", text: "No fue posible cerrar sesión." });
+                  }
+                }}
+              >
+                Cerrar sesión
+              </button>
             </div>
           </header>
 

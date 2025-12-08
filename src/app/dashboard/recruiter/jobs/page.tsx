@@ -21,8 +21,9 @@ type JobRow = {
   salary?: number | null;
   status?: string | null;
   available_slots?: number | null;
+  recruiters?: Array<{ company_name?: string | null }>;
 
-  // Nuevos campos
+  // nuevos campos
   area?: string | null;
   nivel_puesto?: string | null;
   tipo_programa?: string | null;
@@ -35,9 +36,6 @@ type JobRow = {
   moneda?: string | null;
   beneficios?: string | null;
   tags?: string[] | null;
-
-  // relación con recruiter
-  recruiters?: Array<{ company_name?: string | null }>;
 };
 
 type ApplicationRow = {
@@ -50,9 +48,7 @@ export default function JobsPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState<boolean>(true);
-  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(
-    null
-  );
+  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
   const [student, setStudent] = useState<Student | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -281,7 +277,7 @@ export default function JobsPage() {
     }
 
     if (onlyMatchingDegree && student.degree) {
-      const req = job.degree_required ?? job.nivel_educativo_requerido ?? "";
+      const req = job.degree_required ?? "";
       if (!req.toLowerCase().includes((student.degree ?? "").toLowerCase())) {
         return false;
       }
@@ -383,11 +379,11 @@ export default function JobsPage() {
               const noSlots = (job.available_slots ?? 0) <= 0;
               const disabled = applied || noSlots || job.status !== "ABIERTA";
 
-              const rangoSueldo =
+              const salaryText =
                 job.salario_minimo || job.salario_maximo
-                  ? `${job.salario_minimo ?? job.salario_maximo} – ${
-                      job.salario_maximo ?? job.salario_minimo
-                    } ${job.moneda ?? "MXN"}`
+                  ? `${job.salario_minimo ?? "?"} – ${job.salario_maximo ?? "?"} ${
+                      job.moneda ?? "MXN"
+                    }`
                   : job.salary
                   ? `${job.salary} ${job.moneda ?? "MXN"}`
                   : "No especificado";
@@ -395,11 +391,11 @@ export default function JobsPage() {
               return (
                 <article
                   key={job.id}
-                  className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5 cursor-pointer hover:border-sky-200 transition"
+                  className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5 cursor-pointer transition hover:shadow-2xl hover:-translate-y-[1px]"
                   onClick={() => router.push(`/jobs/${job.id}`)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div>
+                    <div className="pr-2">
                       <h3 className="text-lg font-semibold text-slate-900">
                         {job.title}
                       </h3>
@@ -407,58 +403,75 @@ export default function JobsPage() {
                         {company}
                         {job.position ? ` — ${job.position}` : ""}
                       </p>
-                      <p className="mt-2 text-xs text-slate-500">
-                        {job.area && <span className="mr-2">Área: {job.area}</span>}
-                        {job.modalidad_trabajo && (
-                          <span className="mr-2">
-                            Modalidad: {job.modalidad_trabajo}
+
+                      <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-slate-600">
+                        {job.area && (
+                          <span className="rounded-full border border-slate-200 px-2 py-0.5 bg-slate-50">
+                            Área: {job.area}
                           </span>
                         )}
-                        {job.tipo_programa && (
-                          <span className="mr-2">Programa: {job.tipo_programa}</span>
+                        {job.nivel_puesto && (
+                          <span className="rounded-full border border-slate-200 px-2 py-0.5 bg-slate-50">
+                            Nivel: {job.nivel_puesto}
+                          </span>
                         )}
-                      </p>
+                        {job.modalidad_trabajo && (
+                          <span className="rounded-full border border-slate-200 px-2 py-0.5 bg-slate-50">
+                            {job.modalidad_trabajo}
+                          </span>
+                        )}
+                        {job.horario_trabajo && (
+                          <span className="rounded-full border border-slate-200 px-2 py-0.5 bg-slate-50">
+                            {job.horario_trabajo}
+                          </span>
+                        )}
+                      </div>
+
                       <p className="mt-3 text-sm text-slate-700 line-clamp-2">
                         {job.description || "Sin descripción detallada."}
                       </p>
                     </div>
-                    <div className="text-sm text-slate-600 min-w-[160px]">
-                      <p>Rango salarial:</p>
-                      <p className="font-semibold text-slate-900">{rangoSueldo}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Cupos: {job.available_slots ?? 0}
-                      </p>
+
+                    <div className="text-sm text-slate-600 min-w-[180px] flex flex-col items-start sm:items-end gap-1">
+                      <p>Cupos: {job.available_slots ?? 0}</p>
+                      <p>Salario: {salaryText}</p>
                       <p className="mt-1 text-xs text-slate-500">
                         Estado: {job.status ?? "SIN ESTADO"}
                       </p>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <p className="text-xs sm:text-sm text-slate-500">
-                      Grado requerido:{" "}
-                      {job.degree_required ??
-                        job.nivel_educativo_requerido ??
-                        "No especificado"}
-                    </p>
-                    <button
-                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold ${
-                        disabled
-                          ? "bg-slate-100 text-slate-500 cursor-not-allowed"
-                          : "bg-sky-600 text-white shadow-md shadow-sky-500/30 hover:bg-sky-700"
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation(); // para que no dispare el onClick del card
-                        handleApply(job);
-                      }}
-                      disabled={disabled}
-                    >
-                      {applied
-                        ? "Ya postulado"
-                        : noSlots
-                        ? "Sin cupos"
-                        : "Postularme"}
-                    </button>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-sky-500/40 px-3 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50/60 hover:bg-sky-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/jobs/${job.id}`);
+                          }}
+                        >
+                          Ver detalle
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                            disabled
+                              ? "bg-slate-100 text-slate-500 cursor-not-allowed"
+                              : "bg-sky-600 text-white shadow-md shadow-sky-500/30 hover:bg-sky-700"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApply(job);
+                          }}
+                          disabled={disabled}
+                        >
+                          {applied
+                            ? "Ya postulado"
+                            : noSlots
+                            ? "Sin cupos"
+                            : "Postularme"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </article>
               );
