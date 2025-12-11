@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // lo puedes borrar si no lo usas
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
@@ -44,7 +44,8 @@ export default function ForgotPasswordPage() {
 
       setMessage({
         type: "success",
-        text: "Se ha enviado un correo de recuperación a tu email. Revisa tu bandeja de entrada.",
+        text:
+          "Se ha enviado un correo de recuperación a tu email. Revisa tu bandeja de entrada.",
       });
       setEmail("");
     } catch (err) {
