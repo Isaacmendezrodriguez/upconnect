@@ -58,9 +58,9 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
 
+  // 🔎 ahora solo usamos filtro por título y por tags
   const [searchTitle, setSearchTitle] = useState<string>("");
-  const [searchCompany, setSearchCompany] = useState<string>("");
-  const [onlyMatchingDegree, setOnlyMatchingDegree] = useState<boolean>(false);
+  const [searchTag, setSearchTag] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -267,7 +267,7 @@ export default function JobsPage() {
   }
 
   /* ======================
-     FILTROS
+     FILTROS (solo título + tags)
   ====================== */
 
   const filteredJobs = jobs.filter((job) => {
@@ -275,14 +275,9 @@ export default function JobsPage() {
       return false;
     }
 
-    const company = job.recruiters?.[0]?.company_name ?? "";
-    if (searchCompany && !company.toLowerCase().includes(searchCompany.toLowerCase())) {
-      return false;
-    }
-
-    if (onlyMatchingDegree && student.degree) {
-      const req = job.degree_required ?? job.nivel_educativo_requerido ?? "";
-      if (!req.toLowerCase().includes((student.degree ?? "").toLowerCase())) {
+    if (searchTag) {
+      const tagsText = (job.tags ?? []).join(" ").toLowerCase();
+      if (!tagsText.includes(searchTag.toLowerCase())) {
         return false;
       }
     }
@@ -343,7 +338,7 @@ export default function JobsPage() {
               Filtrar vacantes
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               placeholder="Buscar por título"
@@ -353,20 +348,10 @@ export default function JobsPage() {
 
             <input
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              placeholder="Buscar por empresa"
-              value={searchCompany}
-              onChange={(e) => setSearchCompany(e.target.value)}
+              placeholder="Buscar por tecnología / tag (ej. react, python)"
+              value={searchTag}
+              onChange={(e) => setSearchTag(e.target.value)}
             />
-
-            <label className="flex items-center gap-2 text-xs sm:text-sm text-slate-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                checked={onlyMatchingDegree}
-                onChange={() => setOnlyMatchingDegree(!onlyMatchingDegree)}
-              />
-              <span>Solo vacantes relacionadas con mi carrera</span>
-            </label>
           </div>
         </section>
 
@@ -421,6 +406,20 @@ export default function JobsPage() {
                       <p className="mt-3 text-sm text-slate-700 line-clamp-2">
                         {job.description || "Sin descripción detallada."}
                       </p>
+
+                      {/* Tags como chips */}
+                      {job.tags && job.tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {job.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center rounded-full bg-sky-50 border border-sky-100 px-2 py-0.5 text-[11px] text-sky-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="text-sm text-slate-600 min-w-[160px]">
                       <p>Rango salarial:</p>

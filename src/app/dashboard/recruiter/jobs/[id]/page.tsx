@@ -455,13 +455,61 @@ export default function JobDetailPage() {
     newStatus: "ACEPTADO" | "RECHAZADO"
   ) => {
     setMessage(null);
+
     try {
       await setApplicationStatus(applicationId, newStatus);
+
+      // Actualizar estado en memoria
       setApplications((prev) =>
         prev.map((a) =>
           a.id === applicationId ? { ...a, status: newStatus } : a
         )
       );
+
+      // Si se acepta, mandar notificacion por correo
+      if (newStatus === "ACEPTADO") {
+        try {
+          const res = await fetch("/api/notifications/application-accepted", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ applicationId }),
+          });
+
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            console.error(
+              "application-accepted API not ok:",
+              res.status,
+              body
+            );
+            // Mensaje generico si la API fallo
+            setMessage({
+              type: "success",
+              text: "Estado actualizado, pero no se pudo enviar la notificacion por correo.",
+            });
+            return;
+          }
+
+          const data = await res.json();
+          console.log("application-accepted API ok:", data);
+
+          // Mensaje con identificador y correo
+          setMessage({
+            type: "success",
+            text: `Estado actualizado. Se notifico a ${data.studentEmail} (ID postulacion ${data.applicationId}).`,
+          });
+          return;
+        } catch (notifyErr) {
+          console.error("application-accepted API error:", notifyErr);
+          setMessage({
+            type: "success",
+            text: "Estado actualizado, pero hubo un error al enviar la notificacion.",
+          });
+          return;
+        }
+      }
+
+      // Si es RECHAZADO, solo mensaje normal
       setMessage({
         type: "success",
         text: "Estado del postulante actualizado.",
@@ -479,6 +527,7 @@ export default function JobDetailPage() {
       }
     }
   };
+
 
   /* =============== RENDER =============== */
 

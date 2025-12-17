@@ -69,7 +69,7 @@ export default function RegisterRecruiterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-sky-900 flex items-center justify-center px-4 py-8">
+    <main className="min-h-screen bg-linear-to-br from-slate-900 via-slate-950 to-sky-900 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md rounded-2xl bg-white/95 shadow-2xl border border-slate-100 px-7 py-8">
         {/* Encabezado */}
         <header className="mb-6 text-center">

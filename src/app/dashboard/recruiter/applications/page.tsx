@@ -85,6 +85,41 @@ export default function RecruiterApplicationsPage() {
     try {
       await setApplicationStatus(applicationId, status);
       setApplications(prev => prev.map(a => (a.id === applicationId ? { ...a, status } : a)));
+
+      if (status === "ACEPTADO") {
+        try {
+          const res = await fetch("/api/notifications/application-accepted", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ applicationId }),
+          });
+
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            console.error("application-accepted API not ok:", res.status, body);
+            setMessage({
+              type: "success",
+              text: "Estado actualizado, pero no se pudo enviar la notificacion por correo.",
+            });
+            return;
+          }
+
+          const data = await res.json();
+          setMessage({
+            type: "success",
+            text: `Estado actualizado. Se notifico a ${data.studentEmail} (ID postulacion ${data.applicationId}).`,
+          });
+          return;
+        } catch (notifyErr) {
+          console.error("application-accepted API error:", notifyErr);
+          setMessage({
+            type: "success",
+            text: "Estado actualizado, pero hubo un error al enviar la notificacion.",
+          });
+          return;
+        }
+      }
+
       setMessage({ type: "success", text: "Estado del postulante actualizado." });
     } catch (err) {
       const messageText = err instanceof Error ? err.message : String(err);
