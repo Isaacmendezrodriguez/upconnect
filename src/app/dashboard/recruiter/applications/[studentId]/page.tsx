@@ -35,6 +35,7 @@ export default function RecruiterStudentProfilePage() {
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
+  const [recruiterId, setRecruiterId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +44,34 @@ export default function RecruiterStudentProfilePage() {
       setMessage(null);
 
       try {
+        // Reclutador autenticado
+        const { data: authData, error: authErr } = await supabase.auth.getUser();
+        if (authErr) {
+          console.error("auth error:", authErr);
+        }
+
+        const user = authData?.user;
+        if (!user?.id) {
+          setMessage({ type: "error", text: "Usuario no autenticado." });
+          setLoading(false);
+          return;
+        }
+
+        const { data: recData, error: recErr } = await supabase
+          .from("recruiters")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (recErr || !recData?.id) {
+          console.error("fetch recruiter error:", recErr);
+          setMessage({ type: "error", text: "No se pudo cargar el perfil de reclutador." });
+          setLoading(false);
+          return;
+        }
+
+        setRecruiterId(recData.id);
+
         const { data: stuData, error: stuErr } = await supabase
           .from("students")
           .select("id, full_name, degree, boleta, soft_skills, tech_skills")
@@ -68,8 +97,9 @@ export default function RecruiterStudentProfilePage() {
 
         const { data: appsData, error: appsErr } = await supabase
           .from("applications")
-          .select("id, status, job_id, jobs(title, position, recruiters(company_name))")
+          .select("id, status, job_id, jobs(title, position, recruiter_id, recruiters(company_name))")
           .eq("student_id", studentId)
+          .eq("jobs.recruiter_id", recData.id)
           .order("id", { ascending: false });
 
         if (appsErr) {
@@ -106,10 +136,10 @@ export default function RecruiterStudentProfilePage() {
         <div className="rounded-2xl bg-white/95 shadow-2xl border border-slate-100 px-6 py-6 text-center">
           <p className="text-sm text-slate-700 mb-2">No se encontró este estudiante.</p>
           <button
-            onClick={() => router.push("/dashboard/recruiter/applications")}
+            onClick={() => router.push("/dashboard/recruiter")}
             className="inline-flex items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-sky-700"
           >
-            Volver a postulaciones
+            Volver al dashboard
           </button>
         </div>
       </main>
@@ -138,9 +168,9 @@ export default function RecruiterStudentProfilePage() {
           <div className="flex gap-2">
             <button
               className="rounded-lg border border-sky-300/70 bg-sky-50/10 px-4 py-2 text-xs sm:text-sm font-medium text-sky-100 hover:bg-sky-50/20"
-              onClick={() => router.push("/dashboard/recruiter/applications")}
+              onClick={() => router.push("/dashboard/recruiter")}
             >
-              Volver a postulaciones
+              Volver al dashboard
             </button>
           </div>
         </header>
