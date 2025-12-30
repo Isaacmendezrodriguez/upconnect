@@ -334,6 +334,8 @@ export default function JobDetailPage() {
         return;
       }
 
+      const closingJob = job.status !== "CERRADA" && status === "CERRADA";
+
       const { error } = await supabase
         .from("jobs")
         .update({
@@ -399,6 +401,46 @@ export default function JobDetailPage() {
         type: "success",
         text: "Información de la vacante actualizada correctamente.",
       });
+
+      // Si se cerró la vacante y hay postulaciones, ofrecer limpiar
+      if (closingJob && applications.length > 0) {
+        const confirmClose = window.confirm(
+          "La vacante se cerró. ¿Quieres eliminar las postulaciones? Acepta para continuar."
+        );
+        if (confirmClose) {
+          const keepInput = window.prompt(
+            "Opcional: escribe el ID de una postulación que quieras conservar. Déjalo vacío para eliminar todas."
+          );
+
+          const keepId = keepInput && keepInput.trim() !== "" ? Number(keepInput.trim()) : null;
+
+          let query = supabase.from("applications").delete().eq("job_id", jobId);
+          if (keepId && !Number.isNaN(keepId)) {
+            query = query.neq("id", keepId);
+          }
+
+          const { error: delErr } = await query;
+          if (delErr) {
+            console.error("delete applications on close error:", delErr);
+            setMessage({
+              type: "error",
+              text: "Estado cerrado, pero no se pudieron limpiar las postulaciones.",
+            });
+          } else {
+            setApplications((prev) =>
+              keepId && !Number.isNaN(keepId)
+                ? prev.filter((a) => a.id === keepId)
+                : []
+            );
+            setMessage({
+              type: "success",
+              text: keepId && !Number.isNaN(keepId)
+                ? `Vacante cerrada. Se conservará la postulación #${keepId}; las demás fueron eliminadas.`
+                : "Vacante cerrada. Se eliminaron todas las postulaciones.",
+            });
+          }
+        }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("handleSaveJobInfo error:", msg);
