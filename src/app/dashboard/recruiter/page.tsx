@@ -38,6 +38,7 @@ export default function RecruiterDashboardPage() {
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [updatingJobId, setUpdatingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -154,8 +155,15 @@ export default function RecruiterDashboardPage() {
         console.error("delete job error:", error);
         setMessage({ type: "error", text: "No fue posible eliminar la vacante. Intenta de nuevo." });
       } else {
+        // Eliminar postulaciones asociadas a la vacante (solo dashboard, no usuarios)
+        const { error: appsErr } = await supabase.from("applications").delete().eq("job_id", jobId);
+        if (appsErr) {
+          console.error("delete job applications error:", appsErr);
+        }
+
         // Actualizar estado local
         setJobs((prev) => prev.filter((j) => j.id !== jobId));
+        setApplications((prev) => prev.filter((a) => a.job_id !== jobId));
         setMessage({ type: "success", text: "Vacante eliminada correctamente." });
       }
     } catch (err) {
@@ -164,6 +172,63 @@ export default function RecruiterDashboardPage() {
       setMessage({ type: "error", text: "Error inesperado al eliminar la vacante." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangeJobStatus = async (jobId: number, newStatus: "ABIERTA" | "CERRADA") => {
+    setMessage(null);
+    setUpdatingJobId(jobId);
+    try {
+      const { error } = await supabase
+        .from("jobs")
+        .update({ status: newStatus })
+        .eq("id", jobId);
+
+      if (error) throw error;
+
+      // Actualizar estado local de vacantes
+      setJobs((prev) =>
+        prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
+      );
+
+      // Si se cierra, ofrecer eliminar postulaciones
+      if (newStatus === "CERRADA") {
+        const confirmClose = confirm(
+          "La vacante se cerró. ¿Deseas eliminar las postulaciones asociadas?"
+        );
+        if (confirmClose) {
+          const keepInput = window.prompt(
+            "Opcional: escribe el ID de una postulación que quieras conservar. Déjalo vacío para eliminar todas."
+          );
+          const keepId = keepInput && keepInput.trim() !== "" ? Number(keepInput.trim()) : null;
+
+          let query = supabase.from("applications").delete().eq("job_id", jobId);
+          if (keepId && !Number.isNaN(keepId)) {
+            query = query.not("id", "eq", keepId);
+          }
+          const { error: delErr } = await query;
+          if (delErr) throw delErr;
+
+          setApplications((prev) =>
+            keepId && !Number.isNaN(keepId)
+              ? prev.filter((a) => a.id === keepId || a.job_id !== jobId)
+              : prev.filter((a) => a.job_id !== jobId)
+          );
+          setMessage({
+            type: "success",
+            text:
+              keepId && !Number.isNaN(keepId)
+                ? `Vacante cerrada. Se conservó la postulación #${keepId}; las demás fueron eliminadas.`
+                : "Vacante cerrada. Se eliminaron las postulaciones asociadas.",
+          });
+        }
+      }
+    } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
+      console.error("handleChangeJobStatus error:", text);
+      setMessage({ type: "error", text: "No se pudo actualizar el estado de la vacante." });
+    } finally {
+      setUpdatingJobId(null);
     }
   };
 
@@ -376,54 +441,34 @@ export default function RecruiterDashboardPage() {
                         key={job.id}
                         className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
                       >
-                        {/* TÍTULO + LÁPIZ DE EDITAR */}
                         <td className="px-3 py-2 text-slate-800">
-                          <div className="flex items-center justify-between gap-2">
-                            <span>{job.title}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleEditJob(job.id)}
-                              className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
-                            >
-                              <span className="mr-1" aria-hidden="true">
-                                ✏️
-                              </span>
-                              <span className="hidden sm:inline">Editar</span>
-                            </button>
-                          </div>
+                          <span>{job.title}</span>
                         </td>
 
                         <td className="px-3 py-2">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              job.status === "ABIERTA"
-                                ? "bg-emerald-50 text-emerald-700"
-                                : job.status === "CERRADA"
-                                ? "bg-slate-100 text-slate-700"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
+                          <select
+                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800"
+                            value={job.status || "ABIERTA"}
+                            onChange={(e) =>
+                              handleChangeJobStatus(job.id, e.target.value as "ABIERTA" | "CERRADA")
+                            }
+                            disabled={updatingJobId === job.id}
                           >
-                            {job.status || "SIN ESTADO"}
-                          </span>
+                            <option value="ABIERTA">Abierta</option>
+                            <option value="CERRADA">Cerrada</option>
+                          </select>
                         </td>
                         <td className="px-3 py-2 text-slate-700">
-                          {job.available_slots ?? "—"}
+                          {job.available_slots ?? "?"}
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => handleEditJob(job.id)}
-                              className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => handleDeleteJob(job.id)}
                               className="inline-flex items-center justify-center rounded-md bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600"
                             >
-                              🗑️
+                              ???
                             </button>
                           </div>
                         </td>
