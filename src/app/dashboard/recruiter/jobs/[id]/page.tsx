@@ -934,7 +934,15 @@ export default function JobDetailPage() {
                               Estado actual: {app.status}
                             </p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              onClick={() =>
+                                router.push(`/dashboard/recruiter/applications/${app.student_id}`)
+                              }
+                            >
+                              Ver perfil
+                            </button>
                             <button
                               className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                               onClick={() =>
