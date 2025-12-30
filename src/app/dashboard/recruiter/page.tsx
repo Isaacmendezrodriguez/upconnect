@@ -475,7 +475,8 @@ export default function RecruiterDashboardPage() {
                               onClick={() => handleDeleteJob(job.id)}
                               className="inline-flex items-center justify-center rounded-md bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600"
                             >
-                              ???
+                              <span aria-hidden="true">🗑️</span>
+                              <span className="sr-only">Eliminar</span>
                             </button>
                           </div>
                         </td>
