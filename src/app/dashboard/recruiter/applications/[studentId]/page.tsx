@@ -198,34 +198,6 @@ export default function RecruiterStudentProfilePage() {
           </div>
         </section>
 
-        {/* Postulaciones del estudiante */}
-        <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
-            Postulaciones del estudiante
-          </h2>
-          {applications.length === 0 ? (
-            <p className="text-sm text-slate-500">Este estudiante no tiene postulaciones.</p>
-          ) : (
-            <div className="space-y-3">
-              {applications.map((app) => (
-                <div
-                  key={app.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {app.jobs?.title || `Vacante #${app.job_id}`}
-                    </p>
-                    <p className="text-xs text-slate-600">
-                      {app.jobs?.recruiters?.company_name || "Empresa no especificada"}
-                    </p>
-                    <p className="text-xs text-slate-500">Estado: {app.status}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </main>
   );

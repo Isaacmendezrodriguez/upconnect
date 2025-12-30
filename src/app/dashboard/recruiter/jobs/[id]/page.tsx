@@ -908,62 +908,19 @@ export default function JobDetailPage() {
                   </div>
                 </section>
 
-                <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5 mb-6">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                                <section className="rounded-2xl bg-white/95 shadow-xl border border-slate-100 px-6 py-5 mb-6">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-1">
                     Postulantes
                   </h3>
-                  {applications.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      No hay postulantes aún.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {applications.map((app) => (
-                        <div
-                          key={app.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
-                        >
-                          <div>
-                            <p className="text-sm text-slate-800">
-                              Student ID:{" "}
-                              <span className="font-mono text-xs">
-                                {app.student_id}
-                              </span>
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              Estado actual: {app.status}
-                            </p>
-                          </div>
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                              onClick={() =>
-                                router.push(`/dashboard/recruiter/applications/${app.student_id}`)
-                              }
-                            >
-                              Ver perfil
-                            </button>
-                            <button
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-                              onClick={() =>
-                                handleSetApplicationStatus(app.id, "ACEPTADO")
-                              }
-                            >
-                              Aceptar
-                            </button>
-                            <button
-                              className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-                              onClick={() =>
-                                handleSetApplicationStatus(app.id, "RECHAZADO")
-                              }
-                            >
-                              Rechazar
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-xs text-slate-600 mb-3">
+                    Ahora puedes administrar postulantes desde el dashboard principal.
+                  </p>
+                  <button
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    onClick={() => router.push("/dashboard/recruiter")}
+                  >
+                    Ir al dashboard
+                  </button>
                 </section>
               </>
             )}

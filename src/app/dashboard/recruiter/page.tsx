@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { setApplicationStatus } from "@/domain/jobs/jobService";
 
 type Recruiter = {
   id: string;
@@ -18,6 +19,16 @@ type JobRow = {
   available_slots?: number | null;
 };
 
+type ApplicationRow = {
+  id: number;
+  status: string;
+  student_id: string;
+  job_id: number;
+  jobs?: {
+    title?: string | null;
+  } | null;
+};
+
 export default function RecruiterDashboardPage() {
   const router = useRouter();
 
@@ -25,6 +36,7 @@ export default function RecruiterDashboardPage() {
   const [recruiter, setRecruiter] = useState<Recruiter | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [applications, setApplications] = useState<ApplicationRow[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -84,6 +96,20 @@ export default function RecruiterDashboardPage() {
         } else {
           setJobs((jobsData || []) as JobRow[]);
         }
+
+        // 5) Cargar postulaciones de todas las vacantes del recruiter
+        const { data: appsData, error: appsErr } = await supabase
+          .from("applications")
+          .select("id, status, student_id, job_id, jobs(title)")
+          .eq("jobs.recruiter_id", rec.id)
+          .order("id", { ascending: false });
+
+        if (appsErr) {
+          console.error("fetch applications error:", appsErr);
+          setApplications([]);
+        } else {
+          setApplications((appsData || []) as ApplicationRow[]);
+        }
       } catch (err) {
         const text = err instanceof Error ? err.message : String(err);
         console.error("RecruiterDashboard error:", text);
@@ -137,6 +163,25 @@ export default function RecruiterDashboardPage() {
       setMessage({ type: "error", text: "Error inesperado al eliminar la vacante." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSetStatus = async (applicationId: number, status: "ACEPTADO" | "RECHAZADO") => {
+    setMessage(null);
+    try {
+      await setApplicationStatus(applicationId, status);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === applicationId ? { ...a, status } : a))
+      );
+      setMessage({ type: "success", text: "Estado del postulante actualizado." });
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : String(err);
+      console.error("setApplicationStatus error:", messageText);
+      if (messageText.includes("APPLICATION_STATUS_ERROR")) {
+        setMessage({ type: "error", text: "No se pudo actualizar el estado del postulante." });
+      } else {
+        setMessage({ type: "error", text: messageText });
+      }
     }
   };
 
@@ -380,6 +425,61 @@ export default function RecruiterDashboardPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </section>
+
+          {/* Postulantes (agregado al dashboard) */}
+          <section className="rounded-xl border border-slate-100 bg-white px-4 py-4 sm:px-5 sm:py-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-medium text-slate-900">Postulantes</h2>
+              <p className="text-xs text-slate-500">
+                Gestiona aquí los postulantes de todas tus vacantes.
+              </p>
+            </div>
+
+            {applications.length === 0 ? (
+              <p className="text-sm text-slate-500">No hay postulantes todavía.</p>
+            ) : (
+              <div className="space-y-2">
+                {applications.map((app) => (
+                  <div
+                    key={app.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm text-slate-800">
+                        Vacante: {app.jobs?.title || `#${app.job_id}`}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        Student ID: <span className="font-mono">{app.student_id}</span>
+                      </p>
+                      <p className="text-xs text-slate-500">Estado: {app.status}</p>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        onClick={() =>
+                          router.push(`/dashboard/recruiter/applications/${app.student_id}`)
+                        }
+                      >
+                        Ver perfil
+                      </button>
+                      <button
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                        onClick={() => handleSetStatus(app.id, "ACEPTADO")}
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                        onClick={() => handleSetStatus(app.id, "RECHAZADO")}
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
