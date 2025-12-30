@@ -192,7 +192,13 @@ export default function RecruiterApplicationsPage() {
                   <td className="px-4 py-3 text-sm text-gray-700">{app.student_id}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{app.status}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        className="px-3 py-1 bg-slate-100 text-slate-700 rounded border border-slate-200 text-xs"
+                        onClick={() => router.push(`/dashboard/recruiter/applications/${app.student_id}`)}
+                      >
+                        Ver perfil
+                      </button>
                       <button
                         disabled={processingId === app.id}
                         className="px-3 py-1 bg-green-600 text-white rounded"
