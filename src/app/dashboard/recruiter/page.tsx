@@ -447,7 +447,7 @@ export default function RecruiterDashboardPage() {
 
                         <td className="px-3 py-2">
                           <select
-                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800"
+                            className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800"
                             value={job.status || "ABIERTA"}
                             onChange={(e) =>
                               handleChangeJobStatus(job.id, e.target.value as "ABIERTA" | "CERRADA")
@@ -463,6 +463,13 @@ export default function RecruiterDashboardPage() {
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditJob(job.id)}
+                              className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
+                            >
+                              ✎
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteJob(job.id)}
