@@ -275,11 +275,13 @@ export default function JobsPage() {
       return false;
     }
 
-    if (searchTag) {
-      const tagsText = (job.tags ?? []).join(" ").toLowerCase();
+    if (searchTag && Array.isArray(job.tags)) {
+      const tagsText = job.tags.join(" ").toLowerCase();
       if (!tagsText.includes(searchTag.toLowerCase())) {
         return false;
       }
+    } else if (searchTag && !Array.isArray(job.tags)) {
+      return false;
     }
 
     return true;
