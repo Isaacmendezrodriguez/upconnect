@@ -134,7 +134,7 @@ export default function StudentProfilePage() {
         setPhone(stu.phone ?? "");
         setEducationLevel(stu.education_level ?? "");
         setExperience(stu.experience ?? "");
-        setContactEmail(stu.contact_email ?? "");
+        setContactEmail(user.email ?? stu.contact_email ?? "");
 
         setSoftSkillsInput(
           Array.isArray(stu.soft_skills) ? stu.soft_skills.join(", ") : ""
@@ -174,6 +174,18 @@ export default function StudentProfilePage() {
         setMessage({
           type: "error",
           text: "La boleta debe tener exactamente 8 caracteres alfanuméricos (letras y números).",
+        });
+        return;
+      }
+    }
+
+    if (phone.trim() !== "") {
+      const phoneRegex = /^(55|56)\d{8}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        setSaving(false);
+        setMessage({
+          type: "error",
+          text: "El telefono debe iniciar con 55 o 56 y tener 10 dígitos.",
         });
         return;
       }
@@ -444,6 +456,7 @@ export default function StudentProfilePage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Ej. 5512345678"
+                maxLength={10}
               />
             </div>
 
@@ -462,19 +475,6 @@ export default function StudentProfilePage() {
                 <option value="MAESTRIA">Maestria</option>
                 <option value="DOCTORADO">Doctorado</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Correo de contacto
-              </label>
-              <input
-                type="email"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="tu@correo.com"
-              />
             </div>
 
             <div className="md:col-span-2">
