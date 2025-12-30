@@ -167,11 +167,18 @@ export default function RecruiterDashboardPage() {
   };
 
   const handleSetStatus = async (applicationId: number, status: "ACEPTADO" | "RECHAZADO") => {
+    if (status === "RECHAZADO") {
+      const ok = confirm("¿Seguro que deseas rechazar este postulante? Esta acción no se puede deshacer.");
+      if (!ok) return;
+    }
+
     setMessage(null);
     try {
       await setApplicationStatus(applicationId, status);
       setApplications((prev) =>
-        prev.map((a) => (a.id === applicationId ? { ...a, status } : a))
+        prev
+          .map((a) => (a.id === applicationId ? { ...a, status } : a))
+          .filter((a) => a.status !== "RECHAZADO") // si se rechaza, lo quitamos del listado
       );
       setMessage({ type: "success", text: "Estado del postulante actualizado." });
     } catch (err) {
@@ -441,8 +448,9 @@ export default function RecruiterDashboardPage() {
             {applications.length === 0 ? (
               <p className="text-sm text-slate-500">No hay postulantes todavía.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {applications.map((app) => (
+                  // cada tarjeta resume postulante y estado
                   <div
                     key={app.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
@@ -466,13 +474,15 @@ export default function RecruiterDashboardPage() {
                         Ver perfil
                       </button>
                       <button
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                        disabled={app.status !== "PENDIENTE"}
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleSetStatus(app.id, "ACEPTADO")}
                       >
                         Aceptar
                       </button>
                       <button
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                        disabled={app.status !== "PENDIENTE"}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleSetStatus(app.id, "RECHAZADO")}
                       >
                         Rechazar
