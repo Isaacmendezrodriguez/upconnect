@@ -14,6 +14,11 @@ type Student = {
   boleta?: string | null;
   soft_skills?: string[] | null;
   tech_skills?: string[] | null;
+  expected_salary_range?: string | null;
+  phone?: string | null;
+  education_level?: string | null;
+  experience?: string | null;
+  contact_email?: string | null;
 };
 
 const parseTagsToArray = (text: string): string[] =>
@@ -53,6 +58,11 @@ export default function StudentProfilePage() {
   const [fullName, setFullName] = useState("");
   const [degree, setDegree] = useState("");
   const [boleta, setBoleta] = useState("");
+  const [expectedSalary, setExpectedSalary] = useState("");
+  const [phone, setPhone] = useState("");
+  const [educationLevel, setEducationLevel] = useState("");
+  const [experience, setExperience] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
 
   const [softSkillsInput, setSoftSkillsInput] = useState("");
   const [techSkillsInput, setTechSkillsInput] = useState("");
@@ -120,6 +130,11 @@ export default function StudentProfilePage() {
         setFullName(stu.full_name ?? "");
         setDegree(stu.degree ?? "");
         setBoleta(stu.boleta ?? "");
+        setExpectedSalary(stu.expected_salary_range ?? "");
+        setPhone(stu.phone ?? "");
+        setEducationLevel(stu.education_level ?? "");
+        setExperience(stu.experience ?? "");
+        setContactEmail(stu.contact_email ?? "");
 
         setSoftSkillsInput(
           Array.isArray(stu.soft_skills) ? stu.soft_skills.join(", ") : ""
@@ -176,6 +191,11 @@ export default function StudentProfilePage() {
           boleta: boleta.trim() || null,
           soft_skills: softSkillsArray,
           tech_skills: techSkillsArray,
+          expected_salary_range: expectedSalary || null,
+          phone: phone.trim() || null,
+          education_level: educationLevel || null,
+          experience: experience.trim() || null,
+          contact_email: contactEmail.trim() || null,
         })
         .eq("id", student.id);
 
@@ -197,6 +217,11 @@ export default function StudentProfilePage() {
               boleta: boleta.trim() || null,
               soft_skills: softSkillsArray,
               tech_skills: techSkillsArray,
+              expected_salary_range: expectedSalary || null,
+              phone: phone.trim() || null,
+              education_level: educationLevel || null,
+              experience: experience.trim() || null,
+              contact_email: contactEmail.trim() || null,
             }
           : prev
       );
@@ -389,6 +414,82 @@ export default function StudentProfilePage() {
                 </p>
               </div>
             </div>
+          
+          {/* Contacto y expectativas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Salario esperado
+              </label>
+              <select
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                value={expectedSalary}
+                onChange={(e) => setExpectedSalary(e.target.value)}
+              >
+                <option value="">Selecciona un rango</option>
+                <option value="10000-15000">10,000 ? 15,000 MXN</option>
+                <option value="15000-20000">15,000 ? 20,000 MXN</option>
+                <option value="20000-30000">20,000 ? 30,000 MXN</option>
+                <option value="30000-40000">30,000 ? 40,000 MXN</option>
+                <option value="40000+">M?s de 40,000 MXN</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Tel?fono
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ej. 5512345678"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Grado de estudios
+              </label>
+              <select
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                value={educationLevel}
+                onChange={(e) => setEducationLevel(e.target.value)}
+              >
+                <option value="">Selecciona grado</option>
+                <option value="TECNICO">T?cnico</option>
+                <option value="LICENCIATURA">Licenciatura</option>
+                <option value="MAESTRIA">Maestr?a</option>
+                <option value="DOCTORADO">Doctorado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Correo de contacto
+              </label>
+              <input
+                type="email"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="tu@correo.com"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Experiencia previa (trabajos, pr?cticas o proyectos)
+              </label>
+              <textarea
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                value={experience}
+                onChange={(e) => setExperience(e.target.value)}
+                placeholder="Describe brevemente tu experiencia."
+              />
+            </div>
+          </div>
+
           </div>
 
           {/* Actitudes / Soft skills */}
@@ -462,6 +563,11 @@ export default function StudentProfilePage() {
                 setFullName(student.full_name ?? "");
                 setDegree(student.degree ?? "");
                 setBoleta(student.boleta ?? "");
+                setExpectedSalary(student.expected_salary_range ?? "");
+                setPhone(student.phone ?? "");
+                setEducationLevel(student.education_level ?? "");
+                setExperience(student.experience ?? "");
+                setContactEmail(student.contact_email ?? "");
                 setSoftSkillsInput(
                   Array.isArray(student.soft_skills)
                     ? student.soft_skills.join(", ")

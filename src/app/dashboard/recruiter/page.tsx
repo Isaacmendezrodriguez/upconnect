@@ -27,6 +27,15 @@ type ApplicationRow = {
   jobs?: {
     title?: string | null;
   } | null;
+  students?: {
+    full_name?: string | null;
+    degree?: string | null;
+    phone?: string | null;
+    expected_salary_range?: string | null;
+    education_level?: string | null;
+    experience?: string | null;
+    contact_email?: string | null;
+  } | null;
 };
 
 export default function RecruiterDashboardPage() {
@@ -102,7 +111,9 @@ export default function RecruiterDashboardPage() {
         // 5) Cargar postulaciones de todas las vacantes del recruiter
         const { data: appsData, error: appsErr } = await supabase
           .from("applications")
-          .select("id, status, student_id, job_id, jobs(title)")
+          .select(
+            "id, status, student_id, job_id, jobs(title), students(full_name, degree, phone, expected_salary_range, education_level, experience, contact_email)"
+          )
           .eq("jobs.recruiter_id", rec.id)
           .order("id", { ascending: false });
 
@@ -512,8 +523,22 @@ export default function RecruiterDashboardPage() {
                         Vacante: {app.jobs?.title || `#${app.job_id}`}
                       </p>
                       <p className="text-xs text-slate-600">
-                        Student ID: <span className="font-mono">{app.student_id}</span>
+                        {app.students?.full_name || "Alumno sin nombre"} ·{" "}
+                        {app.students?.degree || "Carrera no especificada"}
                       </p>
+                      <p className="text-xs text-slate-600">
+                        Tel: {app.students?.phone || "Sin teléfono"} · Email:{" "}
+                        {app.students?.contact_email || "Sin correo"}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        Salario esperado: {app.students?.expected_salary_range || "No indicado"} ·{" "}
+                        Grado: {app.students?.education_level || "No indicado"}
+                      </p>
+                      {app.students?.experience && (
+                        <p className="text-xs text-slate-500">
+                          Experiencia: {app.students.experience}
+                        </p>
+                      )}
                       <p className="text-xs text-slate-500">Estado: {app.status}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap">
