@@ -35,8 +35,6 @@ export default function RecruiterStudentProfilePage() {
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
-  const [recruiterId, setRecruiterId] = useState<string | null>(null);
-
   useEffect(() => {
     const load = async () => {
       if (!studentId) return;
@@ -44,34 +42,6 @@ export default function RecruiterStudentProfilePage() {
       setMessage(null);
 
       try {
-        // Reclutador autenticado
-        const { data: authData, error: authErr } = await supabase.auth.getUser();
-        if (authErr) {
-          console.error("auth error:", authErr);
-        }
-
-        const user = authData?.user;
-        if (!user?.id) {
-          setMessage({ type: "error", text: "Usuario no autenticado." });
-          setLoading(false);
-          return;
-        }
-
-        const { data: recData, error: recErr } = await supabase
-          .from("recruiters")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (recErr || !recData?.id) {
-          console.error("fetch recruiter error:", recErr);
-          setMessage({ type: "error", text: "No se pudo cargar el perfil de reclutador." });
-          setLoading(false);
-          return;
-        }
-
-        setRecruiterId(recData.id);
-
         const { data: stuData, error: stuErr } = await supabase
           .from("students")
           .select("id, full_name, degree, boleta, soft_skills, tech_skills")
@@ -97,9 +67,8 @@ export default function RecruiterStudentProfilePage() {
 
         const { data: appsData, error: appsErr } = await supabase
           .from("applications")
-          .select("id, status, job_id, jobs(title, position, recruiter_id, recruiters(company_name))")
+          .select("id, status, job_id, jobs(title, position, recruiters(company_name))")
           .eq("student_id", studentId)
-          .eq("jobs.recruiter_id", recData.id)
           .order("id", { ascending: false });
 
         if (appsErr) {
