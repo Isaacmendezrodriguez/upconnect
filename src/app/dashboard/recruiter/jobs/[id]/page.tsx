@@ -76,6 +76,10 @@ export default function JobDetailPage() {
   // Cupos
   const [newSlots, setNewSlots] = useState<number | "">("");
 
+  // Limpieza de postulaciones al cerrar vacante
+  const [showCleanup, setShowCleanup] = useState(false);
+  const [keepSelection, setKeepSelection] = useState<number[]>([]);
+
   /* =============== HELPERS =============== */
 
   const parseTagsToArray = (text: string): string[] =>
@@ -215,6 +219,8 @@ export default function JobDetailPage() {
     e.preventDefault();
     setMessage(null);
     setSavingInfo(true);
+    setShowCleanup(false);
+    setKeepSelection([]);
 
     if (salary !== "" && Number.isNaN(Number(salary))) {
       setMessage({ type: "error", text: "El salario debe ser un número válido." });
@@ -402,44 +408,9 @@ export default function JobDetailPage() {
         text: "Información de la vacante actualizada correctamente.",
       });
 
-      // Si se cerró la vacante y hay postulaciones, ofrecer limpiar
+      // Si se cerró la vacante y hay postulaciones, mostrar interfaz para limpiar
       if (closingJob && applications.length > 0) {
-        const confirmClose = window.confirm(
-          "La vacante se cerró. ¿Quieres eliminar las postulaciones? Acepta para continuar."
-        );
-        if (confirmClose) {
-          const keepInput = window.prompt(
-            "Opcional: escribe el ID de una postulación que quieras conservar. Déjalo vacío para eliminar todas."
-          );
-
-          const keepId = keepInput && keepInput.trim() !== "" ? Number(keepInput.trim()) : null;
-
-          let query = supabase.from("applications").delete().eq("job_id", jobId);
-          if (keepId && !Number.isNaN(keepId)) {
-            query = query.neq("id", keepId);
-          }
-
-          const { error: delErr } = await query;
-          if (delErr) {
-            console.error("delete applications on close error:", delErr);
-            setMessage({
-              type: "error",
-              text: "Estado cerrado, pero no se pudieron limpiar las postulaciones.",
-            });
-          } else {
-            setApplications((prev) =>
-              keepId && !Number.isNaN(keepId)
-                ? prev.filter((a) => a.id === keepId)
-                : []
-            );
-            setMessage({
-              type: "success",
-              text: keepId && !Number.isNaN(keepId)
-                ? `Vacante cerrada. Se conservará la postulación #${keepId}; las demás fueron eliminadas.`
-                : "Vacante cerrada. Se eliminaron todas las postulaciones.",
-            });
-          }
-        }
+        setShowCleanup(true);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -488,6 +459,50 @@ export default function JobDetailPage() {
         setMessage({ type: "error", text: messageText });
       }
     }
+  };
+
+  const handleCleanupDelete = async () => {
+    if (!jobId || Number.isNaN(jobId)) return;
+    const keepIds = keepSelection.filter((n) => Number.isFinite(n));
+
+    setMessage(null);
+    setSavingInfo(true);
+    try {
+      let query = supabase.from("applications").delete().eq("job_id", jobId);
+      if (keepIds.length > 0) {
+        query = query.not("id", "in", `(${keepIds.join(",")})`);
+      }
+      const { error: delErr } = await query;
+      if (delErr) throw delErr;
+
+      setApplications((prev) =>
+        keepIds.length > 0 ? prev.filter((a) => keepIds.includes(a.id)) : []
+      );
+      setMessage({
+        type: "success",
+        text:
+          keepIds.length > 0
+            ? "Vacante cerrada. Se conservaron las postulaciones seleccionadas y se eliminaron las demás."
+            : "Vacante cerrada. Se eliminaron todas las postulaciones.",
+      });
+      setShowCleanup(false);
+      setKeepSelection([]);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : String(err);
+      console.error("handleCleanupDelete error:", text);
+      setMessage({
+        type: "error",
+        text: "No se pudieron eliminar postulaciones. Intenta de nuevo.",
+      });
+    } finally {
+      setSavingInfo(false);
+    }
+  };
+
+  const toggleKeepSelection = (id: number) => {
+    setKeepSelection((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
   /* =============== POSTULANTES =============== */

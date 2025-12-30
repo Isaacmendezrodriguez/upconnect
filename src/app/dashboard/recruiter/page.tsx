@@ -37,6 +37,7 @@ export default function RecruiterDashboardPage() {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
+  const [processingId, setProcessingId] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -167,12 +168,8 @@ export default function RecruiterDashboardPage() {
   };
 
   const handleSetStatus = async (applicationId: number, status: "ACEPTADO" | "RECHAZADO") => {
-    if (status === "RECHAZADO") {
-      const ok = confirm("¿Seguro que deseas rechazar este postulante? Esta acción no se puede deshacer.");
-      if (!ok) return;
-    }
-
     setMessage(null);
+    setProcessingId(applicationId);
     try {
       await setApplicationStatus(applicationId, status);
       setApplications((prev) =>
@@ -189,6 +186,8 @@ export default function RecruiterDashboardPage() {
       } else {
         setMessage({ type: "error", text: messageText });
       }
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -474,18 +473,18 @@ export default function RecruiterDashboardPage() {
                         Ver perfil
                       </button>
                       <button
-                        disabled={app.status !== "PENDIENTE"}
+                        disabled={app.status !== "PENDIENTE" || processingId === app.id}
                         className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleSetStatus(app.id, "ACEPTADO")}
                       >
-                        Aceptar
+                        {processingId === app.id && app.status === "PENDIENTE" ? "Aplicando…" : "Aceptar"}
                       </button>
                       <button
-                        disabled={app.status !== "PENDIENTE"}
+                        disabled={app.status !== "PENDIENTE" || processingId === app.id}
                         className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleSetStatus(app.id, "RECHAZADO")}
                       >
-                        Rechazar
+                        {processingId === app.id && app.status === "PENDIENTE" ? "Aplicando…" : "Rechazar"}
                       </button>
                     </div>
                   </div>
