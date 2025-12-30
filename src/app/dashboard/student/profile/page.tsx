@@ -427,17 +427,17 @@ export default function StudentProfilePage() {
                 onChange={(e) => setExpectedSalary(e.target.value)}
               >
                 <option value="">Selecciona un rango</option>
-                <option value="10000-15000">10,000 ? 15,000 MXN</option>
-                <option value="15000-20000">15,000 ? 20,000 MXN</option>
-                <option value="20000-30000">20,000 ? 30,000 MXN</option>
-                <option value="30000-40000">30,000 ? 40,000 MXN</option>
-                <option value="40000+">M?s de 40,000 MXN</option>
+                <option value="10000-15000">10,000 - 15,000 MXN</option>
+                <option value="15000-20000">15,000 - 20,000 MXN</option>
+                <option value="20000-30000">20,000 - 30,000 MXN</option>
+                <option value="30000-40000">30,000 - 40,000 MXN</option>
+                <option value="40000+">Mas de 40,000 MXN</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Tel?fono
+                Telefono
               </label>
               <input
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
@@ -457,9 +457,9 @@ export default function StudentProfilePage() {
                 onChange={(e) => setEducationLevel(e.target.value)}
               >
                 <option value="">Selecciona grado</option>
-                <option value="TECNICO">T?cnico</option>
+                <option value="TECNICO">Tecnico</option>
                 <option value="LICENCIATURA">Licenciatura</option>
-                <option value="MAESTRIA">Maestr?a</option>
+                <option value="MAESTRIA">Maestria</option>
                 <option value="DOCTORADO">Doctorado</option>
               </select>
             </div>
@@ -479,7 +479,7 @@ export default function StudentProfilePage() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Experiencia previa (trabajos, pr?cticas o proyectos)
+                Experiencia previa (trabajos, practicas o proyectos)
               </label>
               <textarea
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
